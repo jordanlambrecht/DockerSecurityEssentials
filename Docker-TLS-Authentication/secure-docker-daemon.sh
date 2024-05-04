@@ -1,63 +1,43 @@
 set -eu
 
-#set -x ; debugging
-
+# Navigate to the home directory and create a .docker directory if it doesn't exist
 cd ~
-echo "you are now in $PWD"
+echo "You are now in $PWD"
 
-if [ ! -d ".docker/" ] 
-then
-    echo "Directory ./docker/ does not exist"
-    echo "Creating the directory"
+if [ ! -d ".docker/" ]; then
+    echo "Directory .docker/ does not exist."
+    echo "Creating the directory."
     mkdir .docker
 fi
 
 cd .docker/
-echo "type in your certificate password (characters are not echoed)"
+echo "Type in your certificate password (characters are not echoed):"
 read -p '>' -s PASSWORD
+echo ""
 
-echo "Type in the server name you’ll use to connect to the Docker server"
+echo "Type in the server name you’ll use to connect to the Docker server:"
 read -p '>' SERVER
 
-# 256bit AES (Advanced Encryption Standard) is the encryption cipher which is used for generating certificate authority (CA) with 2048-bit security.
-openssl genrsa -aes256 -passout pass:$PASSWORD -out ca-key.pem 2048 
+# Generate the CA key and certificate
+openssl genrsa -aes256 -passout pass:$PASSWORD -out ca-key.pem 2048
+openssl req -new -x509 -days 365 -key ca-key.pem -passin pass:$PASSWORD -sha256 -out ca.pem -subj "/C=US/ST=State/L=City/O=Organization/CN=$SERVER"
 
-# Sign the the previously created CA key with your password and address for a period of one year.
-# i.e. generating a self-signed certificate for CA
-# X.509 is a standard that defines the format of public key certificates, with fixed size 256-bit (32-byte) hash
-openssl req -new -x509 -days 365 -key ca-key.pem -passin pass:$PASSWORD -sha256 -out ca.pem -subj "/C=TR/ST=./L=./O=./CN=$SERVER"
-
-# Generating a server key with 2048-bit security
+# Generate the server key and CSR
 openssl genrsa -out server-key.pem 2048
+openssl req -new -key server-key.pem -subj "/CN=$SERVER" -out server.csr
 
-# Generating a certificate signing request (CSR) for the the server key with the name of your host.
-openssl req -new -key server-key.pem -subj "/CN=$SERVER"  -out server.csr
+# Create a configuration file for server certificate SANs
+echo "subjectAltName = DNS:$SERVER,IP:192.168.1.75" > server-ext.cnf
 
-# Sign the key with your password for a period of one year
-# i.e. generating a self-signed certificate for the key
-openssl x509 -req -days 365 -in server.csr -CA ca.pem -CAkey ca-key.pem -passin "pass:$PASSWORD" -CAcreateserial -out server-cert.pem
+# Sign the server key, generating the server certificate with SAN
+openssl x509 -req -days 365 -in server.csr -CA ca.pem -CAkey ca-key.pem -passin "pass:$PASSWORD" -CAcreateserial -out server-cert.pem -extfile server-ext.cnf
 
-# For client authentication, create a client key and certificate signing request
-# Generate a client key with 2048-bit security
+# Generate the client key and CSR
 openssl genrsa -out key.pem 2048
-# Process the key as a client key.
 openssl req -subj '/CN=client' -new -key key.pem -out client.csr
 
-# To make the key suitable for client authentication, create an extensions config file:
-sh -c 'echo "extendedKeyUsage = clientAuth" > extfile.cnf'
+# Create a configuration file for client certificate extensions
+echo "extendedKeyUsage = clientAuth" > client-ext.cnf
 
-# Sign the (public) key with your password for a period of one year
-openssl x509 -req -days 365 -in client.csr -CA ca.pem -CAkey ca-key.pem -passin "pass:$PASSWORD" -CAcreateserial -out cert.pem -extfile extfile.cnf
-
-echo "Removing unnecessary files i.e. client.csr extfile.cnf server.csr"
-rm ca.srl client.csr extfile.cnf server.csr
-
-echo "Changing the permissions to readonly by root for the server files."
-# To make them only readable by you: 
-chmod 0400 ca-key.pem key.pem server-key.pem
-
-echo "Changing the permissions of the client files to read-only by everyone"
-# Certificates can be world-readable, but you might want to remove write access to prevent accidental damage
-# these are all x509 certificates aka public key certificates
-# X.509 certificates are used in many Internet protocols, including TLS/SSL, which is the basis for HTTPS.
-chmod 0444 ca.pem server-cert.pem cert.pem
+# Sign the client key, generating the client certificate
+openssl x509 -req -days 365 -in client.csr -CA ca.pem -
