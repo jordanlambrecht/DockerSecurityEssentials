@@ -40,4 +40,16 @@ openssl req -subj '/CN=client' -new -key key.pem -out client.csr
 echo "extendedKeyUsage = clientAuth" > client-ext.cnf
 
 # Sign the client key, generating the client certificate
-openssl x509 -req -days 365 -in client.csr -CA ca.pem -
+openssl x509 -req -days 365 -in client.csr -CA ca.pem -CAkey ca-key.pem -passin "pass:$PASSWORD" -CAcreateserial -out cert.pem -extfile client-ext.cnf
+
+# Clean up unnecessary files
+echo "Removing unnecessary files i.e., ca.srl client.csr server.csr server-ext.cnf client-ext.cnf"
+rm -f ca.srl client.csr server.csr server-ext.cnf client-ext.cnf
+
+echo "Changing the permissions to read-only by root for the server files."
+chmod 0400 ca-key.pem key.pem server-key.pem
+
+echo "Changing the permissions of the certificates to read-only by everyone."
+chmod 0444 ca.pem server-cert.pem cert.pem
+
+echo "Certificate setup complete."
