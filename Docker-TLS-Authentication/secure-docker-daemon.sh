@@ -1,3 +1,4 @@
+#!/bin/bash
 set -eu
 
 # Navigate to the home directory and create a .docker directory if it doesn't exist
