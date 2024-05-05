@@ -8,5 +8,5 @@ Video tutorial can be found here: https://www.youtube.com/watch?v=70QOBVwLyC0
 1. Copy the RAW URL path of `secure-docker-daemon.sh`
 2. On your host machine, enter the command `wget <url>`
 3. Grant it executable permission by entering `sudo chmod +x secure-docker-daemon.sh`
-4. Run the script with `./secure-docker-daemon.sh`
+4. Run the script with `sudo bash ./secure-docker-daemon.sh`
 5. Follow the prompt
