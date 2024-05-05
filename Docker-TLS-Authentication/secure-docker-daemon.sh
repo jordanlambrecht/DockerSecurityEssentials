@@ -19,7 +19,7 @@ echo ""
 echo "💻 Type in the IP address you’ll use to connect to the Docker server, i.e., 192.168.1.69"
 read -p '>' IP_ADDRESS
 
-echo "🗺️ Type in the DNS name for the server certificate (e.g., example.com or example.local, press Enter for none):"
+echo "🗺️  Type in the DNS name for the server certificate (e.g., example.com or example.local, press Enter for none):"
 read -p '>' DNS_NAME
 
 # Generate the CA key and certificate
@@ -55,7 +55,7 @@ echo "extendedKeyUsage = clientAuth" > client-ext.cnf
 openssl x509 -req -days 365 -in client.csr -CA ca.pem -CAkey ca-key.pem -passin "pass:$PASSWORD" -CAcreateserial -out cert.pem -extfile client-ext.cnf
 
 # Clean up unnecessary files
-echo "♻️ Removing unnecessary files i.e., ca.srl client.csr server.csr server-ext.cnf client-ext.cnf"
+echo "♻️  Removing unnecessary files i.e., ca.srl client.csr server.csr server-ext.cnf client-ext.cnf"
 rm -f ca.srl client.csr server.csr server-ext.cnf client-ext.cnf
 
 echo "🤝 Changing the permissions to read-only by root for the server files."
